@@ -1,24 +1,46 @@
-import logging
+from azure.storage.blob import BlobServiceClient
 import pandas as pd
+from io import StringIO
 import joblib
 import json
-import csv
-import azure.functions as func  # Import the Azure Functions library
+import logging
+import azure.functions as func
 from azure.functions import HttpRequest, HttpResponse, FunctionApp
 from sklearn.impute import SimpleImputer
 
 app = FunctionApp()
+# Blob Storage connection settings
+connection_string = os.getenv('AZURE_STORAGE_CONNECTION_STRING')  # Use an environment variable
+container_name = "archivedata"  # Your actual Blob Storage container name
+
+# Initialize BlobServiceClient
+blob_service_client = BlobServiceClient.from_connection_string(connection_string)
+
+# Initialize BlobServiceClient
+blob_service_client = BlobServiceClient.from_connection_string(connection_string)
+
+# Function to read CSV data from Blob Storage
+def read_blob_csv(file_name):
+    # Get BlobClient for the specified file
+    blob_client = blob_service_client.get_blob_client(container=container_name, blob=file_name)
+    
+    # Download the blob's content as a string
+    blob_data = blob_client.download_blob().content_as_text()
+    
+    # Convert the string data into a Pandas DataFrame
+    df = pd.read_csv(StringIO(blob_data))
+    return df
 
 # Load the trained model
 model = joblib.load('trained_model.pkl')
 
-# Define methods to load and process data
+# Define methods to load and process data from Blob Storage
 def load_and_prepare_data():
-    # Load and merge data from CSV files
-    ufc_events = pd.read_csv('archive/ufc_event_data.csv')
-    ufc_fights = pd.read_csv('archive/ufc_fight_data.csv')
-    ufc_fight_stats = pd.read_csv('archive/ufc_fight_stat_data.csv')
-    ufc_fighters = pd.read_csv('archive/ufc_fighter_data.csv')
+    # Load data from Blob Storage
+    ufc_events = read_blob_csv('ufc_event_data.csv')
+    ufc_fights = read_blob_csv('ufc_fight_data.csv')
+    ufc_fight_stats = read_blob_csv('ufc_fight_stat_data.csv')
+    ufc_fighters = read_blob_csv('ufc_fighter_data.csv')
     
     merged_data = pd.merge(ufc_fights, ufc_events, on='event_id')
     merged_data = pd.merge(merged_data, ufc_fighters, left_on='f_1', right_on='fighter_id', suffixes=('_fighter1', '_fighter2'))
@@ -207,3 +229,26 @@ def fighterBackend(req: HttpRequest) -> HttpResponse:
     }
 
     return HttpResponse(json.dumps(response), status_code=200, mimetype="application/json")
+
+
+@app.function_name(name="HttpTrigger1")
+@app.route(route="hello")
+def test_function(req: func.HttpRequest) -> func.HttpResponse:
+     logging.info('Python HTTP trigger function processed a request.')
+
+     name = req.params.get('name')
+     if not name:
+        try:
+            req_body = req.get_json()
+        except ValueError:
+            pass
+        else:
+            name = req_body.get('name')
+
+     if name:
+        return func.HttpResponse(f"Hello, {name}. This HTTP triggered function executed successfully.")
+     else:
+        return func.HttpResponse(
+             "This HTTP triggered function executed successfully. Pass a name in the query string or in the request body for a personalized response.",
+             status_code=200
+        )

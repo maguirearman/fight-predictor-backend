@@ -1,0 +1,1 @@
+https://fightpredictorstorage.blob.core.windows.net/functionappzips/functionapp.zip?se=2025-01-01T00%3A00%3A00Z&sp=r&sv=2022-11-02&sr=b&sig=d5wzVvYv8Hhntcm8JE4cd9QS8sJmySeNbXtqyDKSGis%3D
