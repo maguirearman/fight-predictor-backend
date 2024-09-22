@@ -16,8 +16,6 @@ container_name = "archivedata"  # Your actual Blob Storage container name
 # Initialize BlobServiceClient
 blob_service_client = BlobServiceClient.from_connection_string(connection_string)
 
-# Initialize BlobServiceClient
-blob_service_client = BlobServiceClient.from_connection_string(connection_string)
 
 # Function to read CSV data from Blob Storage
 def read_blob_csv(file_name):
